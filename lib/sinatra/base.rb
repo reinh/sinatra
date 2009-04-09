@@ -473,8 +473,21 @@ module Sinatra
     # Recursively replace the params hash with a nested indifferent hash
     def nested_params(params)
       params = indifferent_hash.merge(params)
-      params.each do |key, value|
-        params[key] = Hash === value ? nested_params(value) : value
+      if params.keys.join.include?('[')
+        params.inject indifferent_hash do |res, (key,val)|
+          if key.include?('[')
+            head = key.split(/[\]\[]+/)
+            last = head.pop
+            head.inject(res){ |hash,k| hash[k] ||= indifferent_hash }[last] = val
+          else
+            res[key] = val
+          end
+          res
+        end
+      else        
+        params.each do |key, value|
+          params[key] = Hash === value ? nested_params(value) : value
+        end
       end
     end
 
